@@ -1,0 +1,66 @@
+
+require:
+   quaint -> Source
+
+
+provide:
+   Q
+   qustomize
+   make-q
+
+
+class Embedded:
+   constructor{@x} = pass
+
+
+mknode{match node} =
+   Embedded? {=> x} ->
+      x
+   String? or Number? or Boolean? or null? or undefined? ->
+      #value{node}
+   Array? ->
+      #data{*[node each x -> mknode{x}]}
+   ENode? {=> tags, => props, => children} ->
+      `ENode{^mknode{tags}, ^mknode{props}, ^mknode{children}}`
+   Object? o ->
+      #data{*xs} where xs =
+         items{o} each {k, v} ->
+            `[^=k => ^mknode{v}]`
+
+
+macro qustomize{match arg} =
+   `{^body}` ->
+      it = @mark{`@`}
+      previous = @getopt{.quaint-plugins}
+      if not previous:
+         @setopt{.quaint-plugins} with
+            {@go{`{^it} -> ^body`, .parse, .eval}}
+      else:
+         @setopt{.quaint-plugins} with
+            previous ++ {@go{`{^it} -> ^body`, .parse, .eval}}
+      #multi{}
+   else ->
+      throw E.syntax.qustomize{'Wrong syntax for qustomize.', node = @arg}
+
+
+make-q{*top-plugins} =
+   macro QQ{match arg} =
+      `.customize` ->
+         #macro with {_, _, _, arg} ->
+            qustomize.call{@, arg}
+      #value{String? s} ->
+         q = quaint{*top-plugins}
+         q.plug{*plugins} where
+            plugins = @getopt{.quaint-plugins} or {}
+         q.register-rules with {
+            "{\\x}"{engine, {=> x}} =
+               Embedded with @mark with
+                  @go{Source{x.location.text{}, "<quaint>"}, .source, .parse}
+         }
+         mknode with q.toENode{s}
+      else ->
+         throw E.syntax.Q{'Macro Q must be given a string literal.', node = @arg}
+   QQ
+
+
+Q = make-q{}
