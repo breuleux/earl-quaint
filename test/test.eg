@@ -6,3 +6,66 @@ require-macros:
       assert, asserts
       expect-error
       xdescribe, xit
+
+require-macros:
+   ..src ->
+      Q as QE
+      Q{format = "html"}
+
+
+Q.customize:
+   @register-rules with {
+      "$ \\x"{engine, {=> x}} =
+         outer % engine.gen{x}
+      "$$ \\x"{engine, {=> x}} =
+         outer % engine.gen{x}
+   }
+
+
+describe "produces ENode by default":
+   asserts:
+      ENode? QE"Hello!"
+      ENode? QE"Hello, __Bob"
+
+describe "customized to format as HTML":
+   asserts:
+      Q"Hello!" == "Hello!"
+      Q"Hello, __Bob" == "Hello, <strong>Bob</strong>"
+
+describe "variable interpolation":
+   it "works":
+      name = "Balthazar"
+      age = 21
+      assert Q"__{name} is {age}" == "<strong>Balthazar</strong> is 21"
+
+describe "customization and scoping":
+   it "top level":
+      assert Q"$Hello" == "<outer>Hello</outer>"
+   it "override in inner scopes":
+      Q.customize:
+         @register-rules with {
+            "$ \\x"{engine, {=> x}} =
+               inner % engine.gen{x}
+         }
+      assert Q"$Hello" == "<inner>Hello</inner>"
+   it "still top level":
+      assert Q"$Hello" == "<outer>Hello</outer>"
+   it "different inner scopes":
+      f1{} =
+         Q.customize:
+            @register-rules with {
+               "$ \\x"{engine, {=> x}} =
+                  inner1 % engine.gen{x}
+            }
+         Q"$Hello"
+      f2{} =
+         Q.customize:
+            @register-rules with {
+               "$ \\x"{engine, {=> x}} =
+                  inner2 % engine.gen{x}
+            }
+         Q"$Hello"
+      assert Q"$Hello" == "<outer>Hello</outer>"
+      assert f1{} == "<inner1>Hello</inner1>"
+      assert f2{} == "<inner2>Hello</inner2>"
+
