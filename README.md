@@ -3,7 +3,7 @@ earl-quaint
 ===========
 
 This packages defines the `Q` macro which allows the embedding of
-[Quaint](https://breuleux.github.io/breuleux/quaint)
+[Quaint](https://breuleux.github.io/quaint)
 markup in
 [Earl Grey](http://earl-grey.io).
 
@@ -15,8 +15,8 @@ require-macros:
 Q"Hello __everyone!"         ;; => % {"Hello", strong % "everyone"}
 ```
 
-The result is an ENode, the same data structure that the `[%] operator
-returns in Earl Grey. An ENode can be converted to HTML:
+The result is an `ENode`, the same data structure that the `%`
+operator returns in Earl Grey. An `ENode` can be converted to HTML:
 
 ```earlgrey
 require-macros:
@@ -25,7 +25,7 @@ require-macros:
 
 require: /html
 
-html{Q"Hello __everyone!"}   ;; => "Hello <strong>everyone</strong>"
+html(Q"Hello __everyone!")   ;; => "Hello <strong>everyone</strong>"
 ```
 
 Alternatively, you can specify a format to convert to directly:
