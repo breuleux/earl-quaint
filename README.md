@@ -12,7 +12,7 @@ require-macros:
    earl-quaint ->
       Q
 
-Q"Hello __everyone!"         ;; => % {"Hello", strong % "everyone"}
+Q"Hello __everyone!"  ;; => % {"Hello", strong % "everyone"}
 ```
 
 The result is an `ENode`, the same data structure that the `%`
@@ -25,7 +25,7 @@ require-macros:
 
 require: /html
 
-html(Q"Hello __everyone!")   ;; => "Hello <strong>everyone</strong>"
+html(Q"Hello __everyone!")  ;; => "Hello <strong>everyone</strong>"
 ```
 
 Alternatively, you can specify a format to convert to directly:
@@ -35,7 +35,7 @@ require-macros:
    earl-quaint ->
       Q(format = "html")
 
-Q"Hello __everyone!"         ;; => % "Hello <strong>everyone</strong>"
+Q"Hello __everyone!"  ;; => % "Hello <strong>everyone</strong>"
 ```
 
 Earl Grey expressions can be interpolated inside `{}`s.
@@ -47,4 +47,15 @@ favorites = {
 }
 
 Q"My favorite animal is the {favorites.animal}"
+```
+
+Finally, it is possible to alias `Q` to the single quote:
+
+
+```earlgrey
+require-macros:
+   earl-quaint ->
+      Q(format = "html") as "'"
+
+'Hello __world'  ;; => "Hello <strong>world</strong>"
 ```
