@@ -1,11 +1,12 @@
 
 require:
    quaint -> Source
+   /html
 
 
 provide:
    Q
-   qustomize
+   customize
    make-q
 
 
@@ -23,33 +24,35 @@ mknode{match node} =
    ENode? {=> tags, => props, => children} ->
       `ENode{^mknode{tags}, ^mknode{props}, ^mknode{children}}`
    Object? o ->
-      #data{*xs} where xs =
+      xs =
          items{o} each {k, v} ->
             `[^=k => ^mknode{v}]`
+      if xs.length >= 1:
+         #data{*xs}
+      else:
+         `{=}`
 
 
-macro qustomize{match arg} =
+macro customize{match arg} =
    `{^body}` ->
       it = @mark{`@`}
       previous = @getopt{.quaint-plugins}
-      if not previous:
-         @setopt{.quaint-plugins} with
-            {@go{`{^it} -> ^body`, .parse, .eval}}
-      else:
-         @setopt{.quaint-plugins} with
-            previous ++ {@go{`{^it} -> ^body`, .parse, .eval}}
-      #multi{}
+      new-plugins = {@go{`{^it} -> ^body`, .parse, .eval}}
+      next = [previous or {}] ++ new-plugins
+      @setopt{.quaint-plugins, next}
+      #option{.quaint-plugins, next}
    else ->
-      throw E.syntax.qustomize{'Wrong syntax for qustomize.', node = @arg}
+      throw E.syntax.Q.customize{'Wrong syntax to customize Q.', node = arg}
 
 
-make-q{*top-plugins} =
-   macro QQ{match arg} =
+make-q{options = {=}} =
+   options.plugins or= {}
+   macro{html} QQ{match arg} =
       `.customize` ->
-         #macro with {_, _, _, arg} ->
-            qustomize.call{@, arg}
+         #macro with {_, info, _, arg} ->
+            customize.call{info, arg}
       #value{String? s} ->
-         q = quaint{*top-plugins}
+         q = quaint{*options.plugins}
          q.plug{*plugins} where
             plugins = @getopt{.quaint-plugins} or {}
          q.register-rules with {
@@ -57,9 +60,20 @@ make-q{*top-plugins} =
                Embedded with @mark with
                   @go{Source{x.location.text{}, "<quaint>"}, .source, .parse}
          }
-         mknode with q.toENode{s}
+         res = mknode with q.toENode{s}
+         match options.format as fmt:
+            .html ->
+               `[^ @deps.html]{^res}`
+            .text or .string ->
+               `String{^res}`
+            ENode? or undefined? ->
+               res
+            else ->
+               throw E.syntax.Q{'Unknown format for Q: "{fmt}"', node = arg}
+      {=> plugins = null, => format = null} when plugins or format ->
+         make-q{arg}
       else ->
-         throw E.syntax.Q{'Macro Q must be given a string literal.', node = @arg}
+         throw E.syntax.Q{'Macro Q must be given a string literal.', node = arg}
    QQ
 
 
